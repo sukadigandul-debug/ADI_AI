@@ -36,6 +36,7 @@ import {
   Key,
   Settings,
   ShieldCheck,
+  ExternalLink,
   Download
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -164,6 +165,7 @@ export default function App() {
 
   // --- Nilai State ---
   const [records, setRecords] = useState<any[]>([]);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     const savedRecords = localStorage.getItem('adiai_records');
@@ -179,10 +181,12 @@ export default function App() {
   const handleGenerateMateri = async () => {
     if (!materiChapter) return;
     setIsMateriLoading(true);
+    setErrorMessage(null);
     try {
       const content = await generateMateri(materiSubject, materiChapter, materiReligion);
       setMateriContent(content || '');
-    } catch (error) {
+    } catch (error: any) {
+      setErrorMessage(error.message || "Terjadi kesalahan saat membuat materi.");
       console.error(error);
     } finally {
       setIsMateriLoading(false);
@@ -192,10 +196,12 @@ export default function App() {
   const handleGenerateModul = async () => {
     if (!adminCP || !adminATP) return;
     setIsAdminLoading(true);
+    setErrorMessage(null);
     try {
       const content = await generateModulAjar(adminIdentitas, adminCP, adminATP);
       setAdminModul(content || '');
-    } catch (error) {
+    } catch (error: any) {
+      setErrorMessage(error.message || "Terjadi kesalahan saat membuat modul ajar.");
       console.error(error);
     } finally {
       setIsAdminLoading(false);
@@ -206,10 +212,12 @@ export default function App() {
     setIsAsesmenLoading(true);
     setIsQuizSubmitted(false);
     setUserAnswers({});
+    setErrorMessage(null);
     try {
       const data = await generateAsesmen(asesmenConfig);
       setAsesmenQuestions(data.questions || []);
-    } catch (error) {
+    } catch (error: any) {
+      setErrorMessage(error.message || "Terjadi kesalahan saat membuat soal asesmen.");
       console.error(error);
     } finally {
       setIsAsesmenLoading(false);
@@ -310,6 +318,31 @@ export default function App() {
 
         {/* Content Area */}
         <div className="flex-1 overflow-y-auto p-6 sm:p-8">
+          {errorMessage && (
+            <motion.div 
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="max-w-4xl mx-auto mb-6 bg-rose-50 border border-rose-200 p-4 rounded-2xl flex items-start gap-3 text-rose-800"
+            >
+              <AlertCircle className="flex-shrink-0 mt-0.5" size={20} />
+              <div className="flex-1">
+                <p className="text-sm font-bold mb-1">Terjadi Masalah</p>
+                <p className="text-sm opacity-90">{errorMessage}</p>
+                {!hasApiKey && (
+                  <button 
+                    onClick={handleOpenKeyDialog}
+                    className="mt-2 text-xs font-bold underline hover:text-rose-900"
+                  >
+                    Klik di sini untuk mengatur API Key
+                  </button>
+                )}
+              </div>
+              <button onClick={() => setErrorMessage(null)} className="p-1 hover:bg-rose-100 rounded-lg">
+                <X size={16} />
+              </button>
+            </motion.div>
+          )}
+
           <AnimatePresence mode="wait">
             {activeTab === 'home' && (
               <motion.div
@@ -357,6 +390,39 @@ export default function App() {
                     </button>
                   ))}
                 </div>
+
+                <Card className="p-8 bg-amber-50 border-amber-100">
+                  <div className="flex flex-col md:flex-row gap-6 items-center">
+                    <div className="w-16 h-16 bg-amber-100 rounded-2xl flex items-center justify-center text-amber-600 flex-shrink-0">
+                      <Settings size={32} />
+                    </div>
+                    <div className="flex-1 text-center md:text-left">
+                      <h3 className="text-xl font-bold text-amber-900 mb-2">Panduan Penggunaan (Vercel/Production)</h3>
+                      <p className="text-sm text-amber-800 opacity-90 mb-4">
+                        Aplikasi ini menggunakan model <strong>Gemini 3 Flash</strong> yang memerlukan API Key dari proyek Google Cloud dengan penagihan (billing) aktif. 
+                        Jika Anda mengalami kendala saat melakukan generate, pastikan API Key sudah diset dengan benar.
+                      </p>
+                      <div className="flex flex-wrap gap-3 justify-center md:justify-start">
+                        <button 
+                          onClick={handleOpenKeyDialog}
+                          className="bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-amber-700 transition-colors flex items-center gap-2"
+                        >
+                          <Key size={16} />
+                          Set API Key Sekarang
+                        </button>
+                        <a 
+                          href="https://ai.google.dev/gemini-api/docs/billing" 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="bg-white text-amber-700 border border-amber-200 px-4 py-2 rounded-lg text-sm font-bold hover:bg-amber-100 transition-colors flex items-center gap-2"
+                        >
+                          <ExternalLink size={16} />
+                          Info Billing Gemini
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
               </motion.div>
             )}
 

@@ -1,7 +1,13 @@
 import { GoogleGenAI, Type } from "@google/genai";
 
 const getAI = () => {
+  // Use process.env.GEMINI_API_KEY which is defined in vite.config.ts
   const apiKey = process.env.GEMINI_API_KEY || "";
+  
+  if (!apiKey) {
+    throw new Error("API Key belum dikonfigurasi. Silakan klik tombol 'Set API Key' di sidebar.");
+  }
+  
   return new GoogleGenAI({ apiKey });
 };
 
@@ -17,12 +23,24 @@ export const generateMateri = async (subject: string, chapter: string, religion?
   5. Referensi singkat.
   Gunakan format Markdown. Berikan penjelasan yang mendalam namun mudah dipahami.`;
 
-  const response = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
-    contents: [{ parts: [{ text: prompt }] }],
-  });
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: [{ parts: [{ text: prompt }] }],
+    });
 
-  return response.text;
+    if (!response.text) {
+      throw new Error("Model tidak mengembalikan teks. Periksa kuota atau saldo API Anda.");
+    }
+
+    return response.text;
+  } catch (error: any) {
+    console.error("Gemini Error:", error);
+    if (error.message?.includes("Requested entity was not found")) {
+      throw new Error("Model tidak ditemukan atau API Key tidak valid untuk model ini. Pastikan Anda menggunakan API Key dari proyek Google Cloud dengan billing aktif.");
+    }
+    throw error;
+  }
 };
 
 export const generateModulAjar = async (identitas: any, cp: string, atp: string) => {
@@ -56,12 +74,21 @@ export const generateModulAjar = async (identitas: any, cp: string, atp: string)
   
   Gunakan format Markdown yang rapi.`;
 
-  const response = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
-    contents: [{ parts: [{ text: prompt }] }],
-  });
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: [{ parts: [{ text: prompt }] }],
+    });
 
-  return response.text;
+    if (!response.text) {
+      throw new Error("Model tidak mengembalikan teks.");
+    }
+
+    return response.text;
+  } catch (error: any) {
+    console.error("Gemini Error:", error);
+    throw error;
+  }
 };
 
 export const generateAsesmen = async (config: any) => {
@@ -96,13 +123,22 @@ export const generateAsesmen = async (config: any) => {
     ]
   }`;
 
-  const response = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
-    contents: [{ parts: [{ text: prompt }] }],
-    config: {
-      responseMimeType: "application/json",
-    }
-  });
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: [{ parts: [{ text: prompt }] }],
+      config: {
+        responseMimeType: "application/json",
+      }
+    });
 
-  return JSON.parse(response.text || "{}");
+    if (!response.text) {
+      throw new Error("Model tidak mengembalikan data soal.");
+    }
+
+    return JSON.parse(response.text || "{}");
+  } catch (error: any) {
+    console.error("Gemini Error:", error);
+    throw error;
+  }
 };
